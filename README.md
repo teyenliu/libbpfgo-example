@@ -11,16 +11,16 @@ sudo apt-get update
 sudo apt-get install libbpf-dev make clang llvm libelf-dev
 ```
 
-Building and running hello
+Building and running simple
 ```
 make all
-sudo ./hello
+sudo ./simple
 ```
 
 This builds two things:
 
-dist/hello.bpf.o - an object file for the eBPF program
-* hello - a Go executable
+simple.bpf.o - an object file for the eBPF program
+* simple - a Go executable
 * The Go executable reads in the object file at runtime. Take a look at the .o file with readelf if you want to see the sections defined in it.
 
 ## Docker
