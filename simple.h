@@ -46,6 +46,11 @@ struct {
     __uint(max_entries, 1 << 24);
 } events2 SEC(".maps");
 
+struct {
+    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(max_entries, 1 << 24);
+} events3 SEC(".maps");
+
 long ringbuffer_flags = 0;
 
 char LICENSE[] SEC("license") = "Dual BSD/GPL";

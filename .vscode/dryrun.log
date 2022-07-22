@@ -1,0 +1,11 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/home/danny/SourceCode/libbpfgo-example'
+bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
+CC=clang CGO_CFLAGS="-I /usr/include/bpf" CGO_LDFLAGS="/usr/lib/x86_64-linux-gnu/libbpf.a" go build -o simple 
+clang \
+	-I /usr/include/x86_64-linux-gnu \
+	-g -O2 -c -target bpf \
+	-Dbpf_target_x86 \
+	-o simple.bpf.o simple.bpf.c
+make: Leaving directory '/home/danny/SourceCode/libbpfgo-example'
+ 

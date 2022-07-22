@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strconv"
@@ -15,6 +16,16 @@ import (
 )
 
 type Event2 struct {
+	PID   uint32
+	TID   uint32
+	SAddr uint32
+	DAddr uint32
+	Sport uint16
+	Dport uint16
+	Comm  [80]byte
+}
+
+type Event3 struct {
 	PID   uint32
 	TID   uint32
 	SAddr uint32
@@ -64,7 +75,6 @@ func main() {
 	if err != nil {
 		os.Exit(-1)
 	}
-
 	rb.Start()
 
 	// handle event: sys_execve
@@ -92,7 +102,6 @@ func main() {
 	if err != nil {
 		os.Exit(-1)
 	}
-
 	rb2.Start()
 
 	// handle event: tcp_ack
@@ -113,9 +122,51 @@ func main() {
 		}
 	}()
 
+	// *** event: tcp_sendmsg ***
+	prog3, err := bpfModule.GetProgram("kprobe__tcp_sendmsg")
+	if err != nil {
+		fmt.Printf(err.Error())
+		os.Exit(-1)
+	}
+
+	_, err = prog3.AttachKprobe("tcp_sendmsg")
+	if err != nil {
+		fmt.Printf(err.Error())
+		os.Exit(-1)
+	}
+
+	events3Channel := make(chan []byte)
+	rb3, err := bpfModule.InitRingBuf("events3", events3Channel)
+	if err != nil {
+		fmt.Printf(err.Error())
+		os.Exit(-1)
+	}
+	rb3.Start()
+
+	// handle event: tcp_ack
+	go func() {
+		for {
+			record := <-eventsChannel
+			var event3 Event3
+			if err := binary.Read(bytes.NewBuffer(record), binary.LittleEndian, &event3); err != nil {
+				log.Printf("parsing ringbuf event: %s", err)
+				continue
+			}
+
+			comment := unix.ByteSliceToString(event3.Comm[:])
+
+			fmt.Printf("PID: %d\tTID: %d\tComm: %s\t Edge: %s:%d->%s:%d\n",
+				event3.PID, event3.TID, comment,
+				Uint2IP4(event3.SAddr), event3.Sport, Uint2IP4(event3.DAddr), event3.Dport)
+		}
+	}()
+
 	<-sig
+
 	rb.Stop()
 	rb.Close()
 	rb2.Stop()
 	rb2.Close()
+	rb3.Stop()
+	rb3.Close()
 }
